@@ -16,6 +16,7 @@ module.exports = function (context) {
 
     const baseUrl = siteConfig.url;
     const orgName = siteConfig.title;
+    const verbose = structuredData.verbose || false;
 
     const orgData = {
         '@type': 'Organization',
@@ -64,50 +65,93 @@ module.exports = function (context) {
     };
 
     let data = {};
-    data['@context'] = "https://schema.org";
+    data['@context'] = 'https://schema.org';
     data['@graph'] = [];
-
-    // webpage
-    // breadcrumb
-    // website
-    // organization
 
   return {
     name: 'docusaurus-plugin-structured-data',
     async postBuild({siteConfig = {}, routesPaths = [], outDir}) {
         routesPaths.map((route) => {
-            if (route === '/404.html') {
-                return;
-            }
-            if (route === '/') {
-                // console.log(`processing ${route}...`);
-                // const filePath = path.join(outDir, route, 'index.html');
+            if (!['/404.html'].includes(route)) {
+                verbose ? console.log(`processing ${route}...`): null;
+                const filePath = path.join(outDir, route, 'index.html');
 
-                // JSDOM.fromFile(filePath).then(dom => {
-                //     console.log(dom.window.document.querySelector("title").text);
-                //     let script = dom.window.document.createElement("script");
-                //     script.type = "application/ld+json";
-                //     script.src = JSON.stringify(siteConfig, null, 2);
-                //     dom.window.document.head.appendChild(script);
-                //     fs.writeFileSync(filePath, dom.serialize());
-                // });
-                console.log(webSiteData);
+                JSDOM.fromFile(filePath).then(dom => {
+                    const webPageUrl = `${baseUrl}${route}`;
+                    verbose ? console.log(`webPageUrl: ${webPageUrl}`): null;
+                    const webPageTitle = dom.window.document.querySelector('title').text;
+                    verbose ? console.log(`webPageTitle: ${webPageTitle}`): null;
+                    const webPageDescription = dom.window.document.head.querySelector('[name~=description][content]').content;
+                    verbose ? console.log(`webPageDescription: ${webPageDescription}`): null;
+                    
+                    //
+                    // get WebPage data
+                    //
+                    
+                    verbose ? console.log('processing web page data...'): null;
+                    webPageData['@id'] = `${webPageUrl}#webpage`;
+                    webPageData['url'] = `${webPageUrl}`;
+                    webPageData['name'] = webPageTitle;
+                    webPageData['description'] = webPageDescription;
+                    webPageData['inLanguage'] = structuredData.webpage.inLanguage || 'en-US';
+                    webPageData['datePublished'] = structuredData.webpage.datePublished || new Date().toISOString();
+                    webPageData['dateModified'] = new Date().toISOString();
+                    webPageData['breadcrumb'] = {
+                        '@id': `${webPageUrl}/#breadcrumb`
+                    };
+                    webPageData['potentialAction'] = [
+                        {
+                            '@type': 'ReadAction',
+                            target: [
+                                `${webPageUrl}`
+                            ]
+                        }
+                    ];
 
+                    //
+                    // get Breadcrumb data
+                    //
+                    
+                    verbose ? console.log('processing breadcrumb data...'): null;
+                    breadcrumbData['@id'] = `${webPageUrl}/#breadcrumb`;
+                    breadcrumbData['itemListElement'] = [
+                        {
+                            '@type': 'ListItem',
+                            position: 1,
+                            item: {
+                                '@id': `${baseUrl}/#website`,
+                                name: `${orgName}`,
+                            }
+                        },
+                        {
+                            '@type': 'ListItem',
+                            position: 2,
+                            item: {
+                                '@id': `${webPageUrl}#webpage`,
+                                name: webPageTitle,
+                            }
+                        }
+                    ];
+
+                    //
+                    // add data to graph
+                    //
+
+                    verbose ? console.log('adding data to graph...'): null;
+                    data['@graph'].push(webPageData);
+                    data['@graph'].push(breadcrumbData);
+                    data['@graph'].push(webSiteData);
+                    data['@graph'].push(orgData);
+
+                    let script = dom.window.document.createElement('script');
+                    script.type = 'application/ld+json';
+                    
+                    script.innerHTML = JSON.stringify(data);
+                    dom.window.document.head.appendChild(script);
+                    fs.writeFileSync(filePath, dom.serialize());
+                });
             }
         });
       },
-    // injectHtmlTags() {
-    //   if (!isProd) {
-    //     return {};
-    //   }
-    //   return {
-    //     headTags: [
-    //       {
-    //         tagName: 'script',
-    //         innerHTML: JSON.stringify(siteConfig, null, 2),
-    //       },
-    //     ],
-    //   };
-    // },
   };
 };

@@ -73,7 +73,8 @@ Update `themeConfig` in the `docusaurus.config.js` file, the following shows man
       organization: {}, // Organization properties can be added to this object
       website: {}, // WebSite properties can be added to this object
       webpage: {
-        datePublished: string // date published for the site
+        datePublished: string, // default is the current date
+        inLanguage: string, // default: en-US
       },
     },
     ...
@@ -86,6 +87,7 @@ Below is an example of a `docusaurus.config.js` file with the `themeConfig.struc
 
 ```js
 structuredData: {
+  verbose: true, // print verbose output to console (default: false)
   organization: {
     sameAs: [
       'https://twitter.com/stackql',
@@ -121,6 +123,7 @@ structuredData: {
     inLanguage: 'en-US',
   },
   webpage: {
+    inLanguage: 'en-US',
     datePublished: '2021-07-01',
   }
 },

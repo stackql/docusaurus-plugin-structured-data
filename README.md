@@ -70,6 +70,8 @@ Update `themeConfig` in the `docusaurus.config.js` file, the following shows man
   ...,
   themeConfig: {
     structuredData: {
+      excludedRoutes: [], // array of routes to exclude from structured data generation, include custom redirects here
+      verbose: boolean, // print verbose output to console (default: false)
       organization: {}, // Organization properties can be added to this object
       website: {}, // WebSite properties can be added to this object
       webpage: {
@@ -87,7 +89,10 @@ Below is an example of a `docusaurus.config.js` file with the `themeConfig.struc
 
 ```js
 structuredData: {
-  verbose: true, // print verbose output to console (default: false)
+  excludedRoutes: [
+    '/providers',
+  ],  
+  verbose: true,
   organization: {
     sameAs: [
       'https://twitter.com/stackql',

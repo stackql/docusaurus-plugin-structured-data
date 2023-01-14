@@ -67,16 +67,24 @@ module.exports = function (context) {
     let data = {};
     data['@context'] = 'https://schema.org';
     data['@graph'] = [];
-
-  return {
+    
+    return {
     name: 'docusaurus-plugin-structured-data',
     async postBuild({siteConfig = {}, routesPaths = [], outDir}) {
         routesPaths.map((route) => {
-            if (!['/404.html'].includes(route)) {
-                verbose ? console.log(`processing ${route}...`): null;
+            if(route.startsWith('/blog/tags')) {
+                return;
+            }
+            if (!['/404.html', '/search'].includes(route)) {
+   
                 const filePath = path.join(outDir, route, 'index.html');
 
                 JSDOM.fromFile(filePath).then(dom => {
+                    verbose ? console.log(`processing route: ${route}...`): null;                    
+                    if (structuredData.excludedRoutes.includes(route)){
+                        verbose ? console.log(`route: ${route} is excluded`): null;
+                        return;
+                    }
                     const webPageUrl = `${baseUrl}${route}`;
                     verbose ? console.log(`webPageUrl: ${webPageUrl}`): null;
                     const webPageTitle = dom.window.document.querySelector('title').text;

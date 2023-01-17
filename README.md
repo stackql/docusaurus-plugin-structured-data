@@ -10,6 +10,7 @@ The plugin will generate the following types of structured data, and include the
 - [__`Organization`__](https://schema.org/Organization) - *augmented using data from `themeConfig.structuredData.organization`*
 - [__`WebSite`__](https://schema.org/WebSite) - *augmented using data from `themeConfig.structuredData.website`*
 - [__`WebPage`__](https://schema.org/WebPage) - *dynamically generated for each page*
+- [__`BreadcrumbList`__](https://schema.org/BreadcrumbList) - *dynamically generated for each page*
 
 `Organization` and `WebSite` can be extended using the `themeConfig.structuredData` object based upon properties provided (e.g. you can add any `schema.org` compliant properties for `Organization` and `WebSite` and these will be automatically included in your structured data for each page).  
 
@@ -18,11 +19,12 @@ The plugin will generate the following types of structured data, and include the
 - [__`name`__](https://schema.org/name) - *sourced from page `title`*
 - [__`url`__](https://schema.org/url) - *page url*
 - [__`description`__](https://schema.org/description) - *sourced from `description` in the page frontmatter*
-- [__`BreadcrumbList`__](https://schema.org/BreadcrumbList) - *dynamically generated for each page based upon `<nav>` elements on the page*
 - [__`mainEntityOfPage`__](https://schema.org/mainEntityOfPage) - *sourced from `siteConfig.url`*
 - [__`headline`__](https://schema.org/headline) - *sourced from `siteConfig.title`*
 - [__`dateModified`__](https://schema.org/dateModified) - *sourced from the build date*
 - [__`datePublished`__](https://schema.org/datePublished) - *sourced from `themeConfig.structuredData.website.datePublished`*
+
+`BreadcrumbList` structured data is dynamically generated for each page based upon the page `route`.  
 
 > this plugin uses the `postBuild` lifecycle hook to generate the structured data for each page, and inject it into the `<head>` of the page.  It is only invoked upon __`yarn build`__ or __`npm run build`__ commands being run.  
 
@@ -78,6 +80,8 @@ Update `themeConfig` in the `docusaurus.config.js` file, the following shows man
         datePublished: string, // default is the current date
         inLanguage: string, // default: en-US
       },
+      breadcrumbLabelMap: {} // used to map the breadcrumb labels to a custom value
+      }
     },
     ...
   }
@@ -130,6 +134,19 @@ structuredData: {
   webpage: {
     inLanguage: 'en-US',
     datePublished: '2021-07-01',
+  },
+  breadcrumbLabelMap: {
+    'developers': 'Developers',
+    'functions': 'Functions',
+    'aggregate': 'Aggregate',
+    'datetime': 'Date Time',
+    'json': 'JSON',
+    'math': 'Math',
+    'string': 'String',
+    'command-line-usage': 'Command Line Usage',
+    'getting-started': 'Getting Started',
+    'language-spec': 'Language Specification',
+    're': 'Regular Expressions',
   }
 },
 ```

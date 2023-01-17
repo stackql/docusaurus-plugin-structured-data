@@ -149,73 +149,89 @@ module.exports = function (context) {
                     
                     let breadcrumbData = {
                         '@type': 'BreadcrumbList',
+                        '@id': `${webPageUrl}/#breadcrumb`,
                         itemListElement: [],
                     };
-
-                    breadcrumbData['@id'] = `${webPageUrl}/#breadcrumb`;
-
-                    // breadcrumb list element 1 is always home
-                    breadcrumbData.itemListElement.push(breadcrumbHomeData);
 
                     const routeArray = route.split('/')
                         .slice(1, -1)
                         .map((token) => getBreadcrumbLabel(token));
 
                     verbose ? console.log(`route: ${route}, routeArray: ${routeArray}`): null;
+                    
+                    let pageName;
+                    let elementIndex = 1;
 
-                    if (routeArray.length > 0) {
-                        // its a leaf page - list element 2 is the parent page
-                        switch (routeArray[0]) {
-                            case 'docs':
-                                breadcrumbData.itemListElement.push(breadcrumbDocsData);
-                                break;
-                            case 'blog':
-                                breadcrumbData.itemListElement.push(breadcrumbBlogData);
-                                break;
-                            default:
-                                break;
-                        }
-                        if (routeArray.length > 1) {
-                            // its not /docs/ or /blog/, list element 3 is the current page with ancestors
-                            let pageName;
-                            // for each element in routearray concatenate with |
+                    // add breadcrumb ancestors
+
+                    switch (routeArray.length) {
+                        case 0:
+                            // its the home page or another root level page
+                            pageName = `${webPageTitle}`;
+                            if (pageName !== 'Home') {
+                                breadcrumbData.itemListElement.push(breadcrumbHomeData);
+                                elementIndex = 2;
+                            }
+                            break;
+                        case 1:
+                            // its a top level leaf page, docs or blog
+                            breadcrumbData.itemListElement.push(breadcrumbHomeData);
+                            switch (routeArray[0]) {
+                                case 'docs':
+                                    pageName = 'Documentation';
+                                    elementIndex = 2;
+                                    break;
+                                case 'blog':
+                                    if (route === '/blog'){
+                                        // its the blog index
+                                        pageName = 'Blog';
+                                        elementIndex = 2;
+                                    } else {
+                                        // its a blog post
+                                        breadcrumbData.itemListElement.push(breadcrumbBlogData);
+                                        pageName = `${webPageTitle}`;
+                                        elementIndex = 3;
+                                    }
+                                    break;
+                                default:
+                                    break;
+                            }
+                            break;
+                        default:
+                            // its a nested (docs) leaf page
+                            breadcrumbData.itemListElement.push(breadcrumbHomeData);
+                            switch (routeArray[0]) {
+                                case 'docs':
+                                    breadcrumbData.itemListElement.push(breadcrumbDocsData);
+                                    break;
+                                default:
+                                    break;
+                            }
                             routeArray.forEach((element, index) => {
-                                if (['docs', 'blog'].includes(element)){
+                                if (['docs'].includes(element)){
                                     return;
                                 }
                                 if (index === 1) {
                                     pageName = element;
                                 } else {
-                                    pageName = `${pageName} | ${element}`;
+                                    pageName = `${pageName} - ${element}`;
                                 }
                             });
                             
-                            pageName = `${pageName} | ${webPageTitle}`;
-
-                            breadcrumbData.itemListElement.push(
-                                {
-                                    "@type": "ListItem",
-                                    "position": 3,
-                                    "name": `${pageName}`,
-                                }
-                            );                          
-                        
-                            verbose ? console.log(`pageName: ${pageName}`): null;
-
-                        }      
-                    } else {
-                        // its a root page, link directly from home
-                        breadcrumbData.itemListElement.push(
-                            {
-                                "@type": "ListItem",
-                                "position": 2,
-                                "name": `${webPageTitle}`,
-                            }
-                        );
-
-                        verbose ? console.log(`pageName: ${webPageTitle}`): null;
-
+                            pageName = `${pageName} - ${webPageTitle}`;
+                            elementIndex = 3;
+                            break;
                     }
+
+                    verbose ? console.log(`pageName: ${pageName}, elementIndex: ${elementIndex}`): null;
+
+                    // push final element (the current page)
+                    let leafPageElement = {
+                        '@type': 'ListItem',
+                        position: elementIndex,
+                        name: `${pageName}`,
+                    }
+                    breadcrumbData.itemListElement.push(leafPageElement);
 
                     //
                     // add data to graph

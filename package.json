@@ -1,7 +1,7 @@
 {
     "name": "@stackql/docusaurus-plugin-structured-data",
     "version": "1.0.2",
-    "description": "A plugin which adds your Smartlook tracking code to your docusaurus site.",
+    "description": "A plugin which adds structured data to your docusaurus site.",
     "main": "src/index.js",
     "publishConfig": {
       "access": "public"
@@ -18,7 +18,9 @@
     },
     "keywords": [
       "docusaurus",
-      "smartlook",
+      "structured data",
+      "seo",
+      "yoast",
       "plugin"
     ],
     "author": "Jeffrey Aven @ StackQL Studios",

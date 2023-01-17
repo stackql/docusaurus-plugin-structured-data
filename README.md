@@ -59,7 +59,7 @@ Add to `plugins` in `docusaurus.config.js`:
 ```js
 {
   plugins: [
-    'docusaurus-plugin-structured-data',
+    '@stackql/docusaurus-plugin-structured-data',
     ...
   ]
 }

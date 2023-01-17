@@ -16,6 +16,8 @@ module.exports = function (context) {
 
     const baseUrl = siteConfig.url;
     const orgName = siteConfig.title;
+    const titleDelimiter = siteConfig.titleDelimiter;
+
     const verbose = structuredData.verbose || false;
 
     const orgData = {
@@ -51,28 +53,40 @@ module.exports = function (context) {
         ...structuredData.website,
     };
 
-    let webPageData = {
-        '@type': 'WebPage',
-        isPartOf: {
-            '@id': `${baseUrl}/#website`
-        },
-        ...structuredData.webpage,
+    const breadcrumbHomeData = {
+        '@type': 'ListItem',
+        position: 1,
+        item: `${baseUrl}`,
+        name: 'Home',
     };
 
-    let breadcrumbData = {
-        '@type': 'BreadcrumbList',
-        itemListElement: [],
+    const breadcrumbDocsData = {
+        '@type': 'ListItem',
+        position: 2,
+        item: `${baseUrl}/docs`,
+        name: 'Documentation',
     };
 
-    let data = {};
-    data['@context'] = 'https://schema.org';
-    data['@graph'] = [];
-    
+    const breadcrumbBlogData = {
+        '@type': 'ListItem',
+        position: 2,
+        item: `${baseUrl}/blog`,
+        name: 'Blog',
+    };
+
+    function getBreadcrumbLabel(token){
+        if (structuredData.breadcrumbLabelMap.hasOwnProperty(token)){
+            return structuredData.breadcrumbLabelMap[token];
+        } else {
+            return token;
+        }
+    }
+
     return {
     name: 'docusaurus-plugin-structured-data',
     async postBuild({siteConfig = {}, routesPaths = [], outDir}) {
         routesPaths.map((route) => {
-            if(route.startsWith('/blog/tags')) {
+            if(route === '/blog/tags' || route.startsWith('/blog/tags/') || route.startsWith('/blog/page/')) {
                 return;
             }
             if (!['/404.html', '/search'].includes(route)) {
@@ -81,13 +95,15 @@ module.exports = function (context) {
 
                 JSDOM.fromFile(filePath).then(dom => {
                     verbose ? console.log(`processing route: ${route}...`): null;                    
+                   
                     if (structuredData.excludedRoutes.includes(route)){
                         verbose ? console.log(`route: ${route} is excluded`): null;
                         return;
                     }
+                    
                     const webPageUrl = `${baseUrl}${route}`;
                     verbose ? console.log(`webPageUrl: ${webPageUrl}`): null;
-                    const webPageTitle = dom.window.document.querySelector('title').text;
+                    const webPageTitle = dom.window.document.querySelector('title').text.replace(` ${titleDelimiter} ${orgName}`, '');
                     verbose ? console.log(`webPageTitle: ${webPageTitle}`): null;
                     const webPageDescription = dom.window.document.head.querySelector('[name~=description][content]').content;
                     verbose ? console.log(`webPageDescription: ${webPageDescription}`): null;
@@ -97,6 +113,15 @@ module.exports = function (context) {
                     //
                     
                     verbose ? console.log('processing web page data...'): null;
+
+                    let webPageData = {
+                        '@type': 'WebPage',
+                        isPartOf: {
+                            '@id': `${baseUrl}/#website`
+                        },
+                        ...structuredData.webpage,
+                    };
+
                     webPageData['@id'] = `${webPageUrl}#webpage`;
                     webPageData['url'] = `${webPageUrl}`;
                     webPageData['name'] = webPageTitle;
@@ -119,33 +144,89 @@ module.exports = function (context) {
                     //
                     // get Breadcrumb data
                     //
-                    
+
                     verbose ? console.log('processing breadcrumb data...'): null;
+                    
+                    let breadcrumbData = {
+                        '@type': 'BreadcrumbList',
+                        itemListElement: [],
+                    };
+
                     breadcrumbData['@id'] = `${webPageUrl}/#breadcrumb`;
-                    breadcrumbData['itemListElement'] = [
-                        {
-                            '@type': 'ListItem',
-                            position: 1,
-                            item: {
-                                '@id': `${baseUrl}/#website`,
-                                name: `${orgName}`,
-                            }
-                        },
-                        {
-                            '@type': 'ListItem',
-                            position: 2,
-                            item: {
-                                '@id': `${webPageUrl}#webpage`,
-                                name: webPageTitle,
-                            }
+
+                    // breadcrumb list element 1 is always home
+                    breadcrumbData.itemListElement.push(breadcrumbHomeData);
+
+                    const routeArray = route.split('/')
+                        .slice(1, -1)
+                        .map((token) => getBreadcrumbLabel(token));
+
+                    verbose ? console.log(`route: ${route}, routeArray: ${routeArray}`): null;
+
+                    if (routeArray.length > 0) {
+                        // its a leaf page - list element 2 is the parent page
+                        switch (routeArray[0]) {
+                            case 'docs':
+                                breadcrumbData.itemListElement.push(breadcrumbDocsData);
+                                break;
+                            case 'blog':
+                                breadcrumbData.itemListElement.push(breadcrumbBlogData);
+                                break;
+                            default:
+                                break;
                         }
-                    ];
+                        if (routeArray.length > 1) {
+                            // its not /docs/ or /blog/, list element 3 is the current page with ancestors
+                            let pageName;
+                            // for each element in routearray concatenate with |
+                            routeArray.forEach((element, index) => {
+                                if (['docs', 'blog'].includes(element)){
+                                    return;
+                                }
+                                if (index === 1) {
+                                    pageName = element;
+                                } else {
+                                    pageName = `${pageName} | ${element}`;
+                                }
+                            });
+                            
+                            pageName = `${pageName} | ${webPageTitle}`;
+
+                            breadcrumbData.itemListElement.push(
+                                {
+                                    "@type": "ListItem",
+                                    "position": 3,
+                                    "name": `${pageName}`,
+                                }
+                            );                          
+                        
+                            verbose ? console.log(`pageName: ${pageName}`): null;
+
+                        }      
+                    } else {
+                        // its a root page, link directly from home
+                        breadcrumbData.itemListElement.push(
+                            {
+                                "@type": "ListItem",
+                                "position": 2,
+                                "name": `${webPageTitle}`,
+                            }
+                        );
+
+                        verbose ? console.log(`pageName: ${webPageTitle}`): null;
+
+                    }
 
                     //
                     // add data to graph
                     //
 
                     verbose ? console.log('adding data to graph...'): null;
+
+                    let data = {};
+                    data['@context'] = 'https://schema.org';
+                    data['@graph'] = [];
+
                     data['@graph'].push(webPageData);
                     data['@graph'].push(breadcrumbData);
                     data['@graph'].push(webSiteData);

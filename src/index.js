@@ -86,12 +86,25 @@ module.exports = function (context) {
     name: 'docusaurus-plugin-structured-data',
     async postBuild({siteConfig = {}, routesPaths = [], outDir}) {
         routesPaths.map((route) => {
-            if(route === '/blog/tags' || route.startsWith('/blog/tags/') || route.startsWith('/blog/page/')) {
+            if(
+                route === '/tags' || 
+                route.startsWith('/tags/') || 
+                route.startsWith('/page/') ||
+                route === '/blog/tags' || 
+                route.startsWith('/blog/tags/') || 
+                route.startsWith('/blog/page/')
+                ) {
                 return;
             }
             if (!['/404.html', '/search'].includes(route)) {
    
-                const filePath = path.join(outDir, route, 'index.html');
+                let filePath;
+                
+                if (fs.existsSync(path.join(outDir, route)) && fs.lstatSync(path.join(outDir, route)).isDirectory()) {
+                    filePath = path.join(outDir, route, 'index.html');
+                } else {
+                    filePath = path.join(outDir, `${route}.html`);
+                }
 
                 JSDOM.fromFile(filePath).then(dom => {
                     verbose ? console.log(`processing route: ${route}...`): null;                    
@@ -105,7 +118,7 @@ module.exports = function (context) {
                     verbose ? console.log(`webPageUrl: ${webPageUrl}`): null;
                     const webPageTitle = dom.window.document.querySelector('title').text.replace(` ${titleDelimiter} ${orgName}`, '');
                     verbose ? console.log(`webPageTitle: ${webPageTitle}`): null;
-                    const webPageDescription = dom.window.document.head.querySelector('[name~=description][content]').content;
+                    const webPageDescription = dom.window.document.head.querySelector('[name~=description][content]').content ? dom.window.document.head.querySelector('[name~=description][content]').content : siteConfig.tagline;
                     verbose ? console.log(`webPageDescription: ${webPageDescription}`): null;
                     
                     //

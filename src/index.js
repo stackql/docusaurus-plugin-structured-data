@@ -118,7 +118,10 @@ module.exports = function (context) {
                     verbose ? console.log(`webPageUrl: ${webPageUrl}`): null;
                     const webPageTitle = dom.window.document.querySelector('title').text.replace(` ${titleDelimiter} ${orgName}`, '');
                     verbose ? console.log(`webPageTitle: ${webPageTitle}`): null;
-                    const webPageDescription = dom.window.document.head.querySelector('[name~=description][content]').content ? dom.window.document.head.querySelector('[name~=description][content]').content : siteConfig.tagline;
+                    let webPageDescription = siteConfig.tagline;
+                    if (dom.window.document.head.querySelector('[name~=description][content]')){
+                        webPageDescription = dom.window.document.head.querySelector('[name~=description][content]').content;
+                    }
                     verbose ? console.log(`webPageDescription: ${webPageDescription}`): null;
                     
                     //

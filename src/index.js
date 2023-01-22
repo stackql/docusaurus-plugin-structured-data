@@ -86,25 +86,12 @@ module.exports = function (context) {
     name: 'docusaurus-plugin-structured-data',
     async postBuild({siteConfig = {}, routesPaths = [], outDir}) {
         routesPaths.map((route) => {
-            if(
-                route === '/tags' || 
-                route.startsWith('/tags/') || 
-                route.startsWith('/page/') ||
-                route === '/blog/tags' || 
-                route.startsWith('/blog/tags/') || 
-                route.startsWith('/blog/page/')
-                ) {
+            if(route === '/blog/tags' || route.startsWith('/blog/tags/') || route.startsWith('/blog/page/')) {
                 return;
             }
             if (!['/404.html', '/search'].includes(route)) {
    
-                let filePath;
-                
-                if (fs.existsSync(path.join(outDir, route)) && fs.lstatSync(path.join(outDir, route)).isDirectory()) {
-                    filePath = path.join(outDir, route, 'index.html');
-                } else {
-                    filePath = path.join(outDir, `${route}.html`);
-                }
+                const filePath = path.join(outDir, route, 'index.html');
 
                 JSDOM.fromFile(filePath).then(dom => {
                     verbose ? console.log(`processing route: ${route}...`): null;                    
@@ -118,11 +105,62 @@ module.exports = function (context) {
                     verbose ? console.log(`webPageUrl: ${webPageUrl}`): null;
                     const webPageTitle = dom.window.document.querySelector('title').text.replace(` ${titleDelimiter} ${orgName}`, '');
                     verbose ? console.log(`webPageTitle: ${webPageTitle}`): null;
-                    let webPageDescription = siteConfig.tagline;
-                    if (dom.window.document.head.querySelector('[name~=description][content]')){
-                        webPageDescription = dom.window.document.head.querySelector('[name~=description][content]').content;
-                    }
+                    const webPageDescription = dom.window.document.head.querySelector('[name~=description][content]').content;
                     verbose ? console.log(`webPageDescription: ${webPageDescription}`): null;
+                    
+                    // get page type and image...
+                    let webPageType = 'website';
+                    let webPageImage = themeConfig.image;
+                    let articleAuthorUrl;
+                    let articleAuthorName;
+                    let articlePublishedTime;
+                    let articleKeywords = [];
+
+                    const metaNodeList = dom.window.document.querySelectorAll('meta');
+
+                    for (const value of metaNodeList.values()) {
+
+                        // check name attribute
+                        switch(value.name){
+                            case 'author':
+                                articleAuthorName = value.content;
+                                break;
+                            case 'keywords':
+                                articleKeywords = value.content.split(',');
+                                break;
+                            default:
+                                break;
+                        };
+    
+                        // check property attribute
+                        switch(value.getAttribute('property')){
+                            case 'og:type':
+                                webPageType = value.content;
+                                break;
+                            case 'og:image':
+                                webPageImage = value.content;
+                                break;
+                            case 'article:author':
+                                articleAuthorUrl = value.content;
+                                break;
+                            case 'article:published_time':
+                                articlePublishedTime = value.content;
+                                break;
+                            default:
+                                break;
+                        };
+                    }
+
+                    verbose ? console.log(`webPageType: ${webPageType}`): null;
+                    verbose ? console.log(`webPageImage: ${webPageImage}`): null;
+
+                    if(webPageType === 'article'){
+
+                        verbose ? console.log(`articleAuthorUrl: ${articleAuthorUrl}`): null;
+                        verbose ? console.log(`articleAuthorName: ${articleAuthorName}`): null;
+                        verbose ? console.log(`articlePublishedTime: ${articlePublishedTime}`): null;
+                        verbose ? console.log(`articleKeywords: ${articleKeywords}`): null;
+                    }
                     
                     //
                     // get WebPage data
@@ -249,6 +287,91 @@ module.exports = function (context) {
                     }
                     breadcrumbData.itemListElement.push(leafPageElement);
 
+                    // article related structured data
+                    let articleData;
+                    let imageObjectData;
+                    let personData;
+
+                    if(webPageType === 'article'){
+
+                        verbose ? console.log('Adding article data...'): null;
+
+                        // get word count
+                        let wordCount = 0;
+                        let paragraphs = dom.window.document.getElementsByTagName('p'); 
+                        for (let i = 0; i < paragraphs.length; i++) {
+                            wordCount += paragraphs[i].textContent.split(' ').length;
+                        }
+                        
+                        // article data
+                        articleData = {
+                            '@type': 'Article',
+                            '@id': `${webPageUrl}#article`,
+                            isPartOf: {
+                                '@id': `${webPageUrl}`
+                            },
+                            author: {
+                                name: articleAuthorName,
+                                '@id': `${webPageUrl}/#/schema/person`
+                            },
+                            headline: webPageTitle,
+                            datePublished: articlePublishedTime,
+                            dateModified: articlePublishedTime,
+                            mainEntityOfPage: {
+                                '@id': `${webPageUrl}`
+                            },
+                            wordCount: wordCount,
+                            publisher: {
+                                '@id': `${baseUrl}/#organization`
+                            },
+                            image: {
+                                '@id': `${webPageUrl}/#primaryimage`
+                            },
+                            thumbnailUrl: `${webPageImage}`,
+                            keywords: articleKeywords,
+                            articleSection: [
+                                "Blog",
+                            ],
+                            inLanguage: structuredData.website.inLanguage,
+                        };
+
+                        // image object data
+                        imageObjectData = {
+                            '@type': 'ImageObject',
+                            inLanguage: structuredData.website.inLanguage,
+                            '@id': `${webPageUrl}#primaryimage`,
+                            url: `${webPageImage}`,
+                            contentUrl: `${webPageImage}`,
+                            caption: `${webPageTitle}`,
+                            width: structuredData.featuredImageDimensions.width,
+                            height: structuredData.featuredImageDimensions.height,
+                        };
+
+                        // person data
+
+                        if(articleAuthorName){
+
+                            verbose ? console.log(`Getting person data for ${articleAuthorName}...`): null;
+
+                            personData = {
+                                '@type': 'Person',
+                                '@id': `${baseUrl}/#/schema/person`,
+                                name: `${articleAuthorName}`,
+                                image: {
+                                    '@type': "ImageObject",
+                                    inLanguage: "en-US",
+                                    '@id': `${baseUrl}/#/schema/person/image/`,
+                                    url: structuredData.authors[articleAuthorName].imageUrl,
+                                    contentUrl: structuredData.authors[articleAuthorName].imageUrl,
+                                    caption: `${articleAuthorName}`,
+                                  },
+                                sameAs: structuredData.authors[articleAuthorName].sameAs,
+                                url: `${articleAuthorUrl}`,
+                            }
+                        }
+                            
+                    };
+
                     //
                     // add data to graph
                     //
@@ -259,10 +382,21 @@ module.exports = function (context) {
                     data['@context'] = 'https://schema.org';
                     data['@graph'] = [];
 
-                    data['@graph'].push(webPageData);
-                    data['@graph'].push(breadcrumbData);
-                    data['@graph'].push(webSiteData);
-                    data['@graph'].push(orgData);
+
+                    if(webPageType === 'article'){
+                        data['@graph'].push(articleData);
+                        data['@graph'].push(webPageData);
+                        data['@graph'].push(imageObjectData);
+                        data['@graph'].push(breadcrumbData);
+                        data['@graph'].push(webSiteData);
+                        data['@graph'].push(orgData);
+                        articleAuthorName ? data['@graph'].push(personData): null;
+                    } else {
+                        data['@graph'].push(webPageData);
+                        data['@graph'].push(breadcrumbData);
+                        data['@graph'].push(webSiteData);
+                        data['@graph'].push(orgData);
+                    }
 
                     let script = dom.window.document.createElement('script');
                     script.type = 'application/ld+json';

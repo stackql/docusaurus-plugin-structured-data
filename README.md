@@ -12,6 +12,8 @@ The plugin will generate the following types of structured data, and include the
 - [__`WebPage`__](https://schema.org/WebPage) - *dynamically generated for each page*
 - [__`BreadcrumbList`__](https://schema.org/BreadcrumbList) - *dynamically generated for each page*
 
+> Docusaurus generated microdata for `BreadcrumbList` is removed by this plugin in favor of the corresponding JSON-LD data.
+
 `Organization` and `WebSite` can be extended using the `themeConfig.structuredData` object based upon properties provided (e.g. you can add any `schema.org` compliant properties for `Organization` and `WebSite` and these will be automatically included in your structured data for each page).  
 
 `WebPage` structured data is dynamically generated for each page, and includes the following properties:  

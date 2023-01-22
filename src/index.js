@@ -418,6 +418,31 @@ module.exports = function (context) {
                     
                     script.innerHTML = JSON.stringify(data);
                     dom.window.document.head.appendChild(script);
+
+                    // find and remove breadcrumb microdata
+                    let breadcrumbMicrodata = dom.window.document.querySelector('ul[itemtype="https://schema.org/BreadcrumbList"]');
+                    if(breadcrumbMicrodata){
+                        // remove itemtype and itemscope property from node
+                        breadcrumbMicrodata.removeAttribute('itemtype');
+                        breadcrumbMicrodata.removeAttribute('itemscope');
+                    }
+
+                    let breadcrumbListItemMicrodata = dom.window.document.querySelector('li[itemtype="https://schema.org/ListItem"]');
+                    if(breadcrumbListItemMicrodata){
+                        // remove itemtype and itemscope property from node
+                        breadcrumbListItemMicrodata.removeAttribute('itemtype');
+                        breadcrumbListItemMicrodata.removeAttribute('itemscope');
+                        breadcrumbListItemMicrodata.removeAttribute('itemprop');
+                    }
+
+                    // find and remove <meta itemprop="position" ..>, excess baggage with JSON-LD breadcrumb data
+                    let breadcrumbPositionMeta = dom.window.document.querySelectorAll('meta[itemprop="position"]');
+                    if(breadcrumbPositionMeta){
+                        breadcrumbPositionMeta.forEach((element) => {
+                            element.remove();
+                        });
+                    }
+
                     fs.writeFileSync(filePath, dom.serialize());
                 });
             }

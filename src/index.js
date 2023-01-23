@@ -191,7 +191,7 @@ module.exports = function (context) {
                         ...structuredData.webpage,
                     };
 
-                    webPageData['@id'] = `${webPageUrl}#webpage`;
+                    webPageData['@id'] = `${webPageUrl}/#webpage`;
                     webPageData['url'] = `${webPageUrl}`;
                     webPageData['name'] = webPageTitle;
                     webPageData['description'] = webPageDescription;
@@ -321,9 +321,10 @@ module.exports = function (context) {
                         // article data
                         articleData = {
                             '@type': 'Article',
-                            '@id': `${webPageUrl}#article`,
+                            '@id': `${webPageUrl}/#article`,
                             isPartOf: {
-                                '@id': `${webPageUrl}`
+                                '@type': 'WebPage',
+                                '@id': `${webPageUrl}/#webpage`
                             },
                             author: {
                                 name: articleAuthorName,
@@ -333,7 +334,7 @@ module.exports = function (context) {
                             datePublished: articlePublishedTime,
                             dateModified: articlePublishedTime,
                             mainEntityOfPage: {
-                                '@id': `${webPageUrl}`
+                                '@id': `${webPageUrl}/#webpage`
                             },
                             wordCount: wordCount,
                             publisher: {
@@ -354,7 +355,7 @@ module.exports = function (context) {
                         imageObjectData = {
                             '@type': 'ImageObject',
                             inLanguage: structuredData.website.inLanguage,
-                            '@id': `${webPageUrl}#primaryimage`,
+                            '@id': `${webPageUrl}/#primaryimage`,
                             url: `${webPageImage}`,
                             contentUrl: `${webPageImage}`,
                             caption: `${webPageTitle}`,

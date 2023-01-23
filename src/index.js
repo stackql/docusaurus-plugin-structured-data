@@ -17,17 +17,21 @@ module.exports = function (context) {
     const baseUrl = siteConfig.url;
     const orgName = siteConfig.title;
     const titleDelimiter = siteConfig.titleDelimiter;
-
     const verbose = structuredData.verbose || false;
+
+    // need to build inverted index as the "name" property is not always populated for blog articles
+    verbose ? console.log(`building inverted index for authors...`): null;
+    const authorInvIndex = {};
+    for (const [key, value] of Object.entries(structuredData.authors)) {
+        authorInvIndex[value.url] = key;
+    }
+    verbose ? console.log(`inverted author index :\n${JSON.stringify(authorInvIndex, null, 2)}`): null;
 
     const orgData = {
         '@type': 'Organization',
         '@id': `${baseUrl}/#organization`,
         name: `${orgName}`,
         url: `${baseUrl}`,
-        image: {
-            '@id': `${baseUrl}/#/schema/logo/image/`,
-        },
         ...structuredData.organization,
     };
 
@@ -109,7 +113,7 @@ module.exports = function (context) {
                 }
 
                 JSDOM.fromFile(filePath).then(dom => {
-                    verbose ? console.log(`processing route: ${route}...`): null;                    
+                    verbose ? console.log(`processing route: ${route}...`): null;
                    
                     if (structuredData.excludedRoutes.includes(route)){
                         verbose ? console.log(`route: ${route} is excluded`): null;
@@ -172,6 +176,12 @@ module.exports = function (context) {
                     if(webPageType === 'article'){
 
                         verbose ? console.log(`articleAuthorUrl: ${articleAuthorUrl}`): null;
+
+                        if(!articleAuthorName){
+                            verbose ? console.log(`articleAuthorName is not defined for route: ${route}, using inverted index`): null;
+                            articleAuthorName = authorInvIndex[articleAuthorUrl];
+                        }
+
                         verbose ? console.log(`articleAuthorName: ${articleAuthorName}`): null;
                         verbose ? console.log(`articlePublishedTime: ${articlePublishedTime}`): null;
                         verbose ? console.log(`articleKeywords: ${articleKeywords}`): null;
@@ -328,7 +338,7 @@ module.exports = function (context) {
                             },
                             author: {
                                 name: articleAuthorName,
-                                '@id': `${webPageUrl}/#/schema/person`
+                                '@id': `${baseUrl}/#/schema/person/${structuredData.authors[articleAuthorName].authorId}`
                             },
                             headline: webPageTitle,
                             datePublished: articlePublishedTime,
@@ -348,13 +358,13 @@ module.exports = function (context) {
                             articleSection: [
                                 "Blog",
                             ],
-                            inLanguage: structuredData.website.inLanguage,
+                            inLanguage: webPageData.inLanguage,
                         };
 
                         // image object data
                         imageObjectData = {
                             '@type': 'ImageObject',
-                            inLanguage: structuredData.website.inLanguage,
+                            inLanguage: webPageData.inLanguage,
                             '@id': `${webPageUrl}/#primaryimage`,
                             url: `${webPageImage}`,
                             contentUrl: `${webPageImage}`,
@@ -365,25 +375,22 @@ module.exports = function (context) {
 
                         // person data
 
-                        if(articleAuthorName){
+                        verbose ? console.log(`Getting person data for ${articleAuthorName}...`): null;
 
-                            verbose ? console.log(`Getting person data for ${articleAuthorName}...`): null;
-
-                            personData = {
-                                '@type': 'Person',
-                                '@id': `${baseUrl}/#/schema/person`,
-                                name: `${articleAuthorName}`,
-                                image: {
-                                    '@type': "ImageObject",
-                                    inLanguage: "en-US",
-                                    '@id': `${baseUrl}/#/schema/person/image/`,
-                                    url: structuredData.authors[articleAuthorName].imageUrl,
-                                    contentUrl: structuredData.authors[articleAuthorName].imageUrl,
-                                    caption: `${articleAuthorName}`,
-                                  },
-                                sameAs: structuredData.authors[articleAuthorName].sameAs,
-                                url: `${articleAuthorUrl}`,
-                            }
+                        personData = {
+                            '@type': 'Person',
+                            '@id': `${baseUrl}/#/schema/person/${structuredData.authors[articleAuthorName].authorId}`,
+                            name: `${articleAuthorName}`,
+                            image: {
+                                '@type': 'ImageObject',
+                                inLanguage: webPageData.inLanguage,
+                                '@id': `${baseUrl}/#/schema/person/image/${structuredData.authors[articleAuthorName].authorId}`,
+                                url: structuredData.authors[articleAuthorName].imageUrl,
+                                contentUrl: structuredData.authors[articleAuthorName].imageUrl,
+                                caption: `${articleAuthorName}`,
+                                },
+                            sameAs: structuredData.authors[articleAuthorName].sameAs,
+                            url: `${articleAuthorUrl}`,
                         }
                             
                     };

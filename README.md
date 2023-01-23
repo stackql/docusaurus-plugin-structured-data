@@ -84,8 +84,10 @@ Update `themeConfig` in the `docusaurus.config.js` file, the following shows man
       },
       authors:{
         author_name: {
-          imageUrl: string,
-          sameAs: []
+          authorId: string, // unique id for the author - used as an identifier in structured data
+          url: string, // MUST be the same as the `url` property in the `authors.yml` file in the `blog` directory
+          imageUrl: string, // gravatar url
+          sameAs: [] // synonymous entity links, e.g. github, linkedin, twitter, etc.
         },
       },  
       organization: {}, // Organization properties can be added to this object
@@ -117,6 +119,8 @@ structuredData: {
   },
   authors:{
     'Jeffrey Aven': {
+      authorId: '1',
+      url: 'https://www.linkedin.com/in/jeffreyaven/',
       imageUrl: 'https://s.gravatar.com/avatar/f96573d092470c74be233e1dded5376f?s=80',
       sameAs: [
         'https://www.amazon.com/stores/Jeffrey-Aven/author/B0BSP78VVL',
@@ -143,12 +147,12 @@ structuredData: {
     logo: {
       '@type': 'ImageObject',
       inLanguage: 'en-US',
-      '@id': 'https://stackql.io/#/schema/logo/image/',
-      url: 'https://stackql.io',
-      contentUrl: 'orgLogoContentUrl',
-      width: 0,
-      height: 0,
-      caption: '',
+      '@id': 'https://stackql.io/#logo',
+      url: 'https://stackql.io/img/stackql-cover.png',
+      contentUrl: 'https://stackql.io/img/stackql-cover.png',
+      width: 1440,
+      height: 900,
+      caption: 'StackQL - your cloud using SQL',
     },
     address: {
       '@type': 'PostalAddress',

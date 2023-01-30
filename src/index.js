@@ -112,6 +112,11 @@ module.exports = function (context) {
                     filePath = path.join(outDir, `${route}.html`);
                 }
 
+                if (!fs.existsSync(filePath)){
+                    verbose ? console.log(`skipping filePath: ${filePath} (route: ${route})...`): null;
+                    return;
+                }
+
                 JSDOM.fromFile(filePath).then(dom => {
                     verbose ? console.log(`processing route: ${route}...`): null;
                    

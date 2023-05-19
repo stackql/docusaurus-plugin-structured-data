@@ -166,6 +166,8 @@ module.exports = function (context) {
                                 break;
                             case 'article:author':
                                 articleAuthorUrl = value.content;
+                                // if articleAuthorUrl contains multiple authors, only use the first one
+                                articleAuthorUrl = articleAuthorUrl.split(',')[0];
                                 break;
                             case 'article:published_time':
                                 articlePublishedTime = value.content;
